@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/components/ui/use-toast";
-import { Upload, File, Info, Tag, X, RotateCcw } from "lucide-react";
+import { Upload, File, Info, Tag, X, RotateCcw, HelpCircle } from "lucide-react";
 import { ThreeViewer } from '@/components/ThreeViewer';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -23,6 +23,7 @@ export default function AssetManager() {
   const [sortCriteria, setSortCriteria] = useState('name');
   const [filterType, setFilterType] = useState('all');
   const [filterSize, setFilterSize] = useState('all');
+  const [showHelp, setShowHelp] = useState(false);
   const { toast } = useToast();
 
   const onDrop = useCallback((acceptedFiles) => {
@@ -185,6 +186,18 @@ export default function AssetManager() {
             </SelectContent>
           </Select>
         </div>
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button variant="outline" size="icon" onClick={() => setShowHelp(true)}>
+                <HelpCircle className="h-4 w-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>Click for help on using the 3D viewer</p>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -303,6 +316,22 @@ export default function AssetManager() {
           </CardContent>
         </Card>
       </div>
+
+      <Dialog open={showHelp} onOpenChange={setShowHelp}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>How to Use the 3D Viewer</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <p><strong>Rotate:</strong> Click and drag with the left mouse button.</p>
+            <p><strong>Pan:</strong> Click and drag with the right mouse button, or use the arrow buttons.</p>
+            <p><strong>Zoom:</strong> Use the mouse wheel, or the zoom slider.</p>
+            <p><strong>Reset View:</strong> Click the "Reset View" button to return to the default position.</p>
+            <p><strong>Wireframe:</strong> Toggle the wireframe mode to see the model's structure.</p>
+            <p><strong>Fullscreen:</strong> Enter or exit fullscreen mode for a better view.</p>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       <Accordion type="single" collapsible>
         <AccordionItem value="advanced-features">
