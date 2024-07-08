@@ -5,40 +5,52 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/components/ui/use-toast";
-import { Upload, File } from "lucide-react";
+import { Upload, File, Info } from "lucide-react";
 import { ThreeViewer } from '@/components/ThreeViewer';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 export default function AssetManager() {
   const [assets, setAssets] = useState([]);
   const [selectedAsset, setSelectedAsset] = useState(null);
+  const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
 
   const onDrop = useCallback((acceptedFiles) => {
+    setIsLoading(true);
     acceptedFiles.forEach((file) => {
       const reader = new FileReader();
-      reader.onabort = () => console.log('file reading was aborted');
-      reader.onerror = () => console.log('file reading has failed');
+      reader.onabort = () => {
+        setIsLoading(false);
+        toast({
+          title: "File Reading Aborted",
+          description: "The file reading process was aborted.",
+          variant: "destructive",
+        });
+      };
+      reader.onerror = () => {
+        setIsLoading(false);
+        toast({
+          title: "File Reading Failed",
+          description: "There was an error reading the file.",
+          variant: "destructive",
+        });
+      };
       reader.onload = () => {
-        // Do something with the file contents
-        const binaryStr = reader.result;
-        console.log(binaryStr);
-        // Here you would typically send this to your backend
-        // For now, we'll just add it to our local state
         setAssets(prevAssets => [...prevAssets, {
           name: file.name,
           type: file.type,
           size: file.size,
           lastModified: file.lastModified,
-          // In a real app, you'd generate this on the server
           url: URL.createObjectURL(file)
         }]);
+        setIsLoading(false);
+        toast({
+          title: "File Uploaded",
+          description: `${file.name} has been successfully uploaded.`,
+        });
       };
       reader.readAsArrayBuffer(file);
-    });
-    
-    toast({
-      title: "Files uploaded",
-      description: `${acceptedFiles.length} file(s) have been uploaded.`,
     });
   }, [toast]);
 
@@ -58,12 +70,22 @@ export default function AssetManager() {
     <div className="space-y-6">
       <h1 className="text-3xl font-bold">3D Asset Manager</h1>
 
+      <Alert>
+        <Info className="h-4 w-4" />
+        <AlertTitle>How to use the 3D Asset Manager</AlertTitle>
+        <AlertDescription>
+          Upload your 3D models by dragging and dropping files or clicking the upload area. 
+          Supported formats include .3ds, .obj, .glb, .gltf, .stl, and .fbx. 
+          Once uploaded, you can view your models in the 3D viewer below.
+        </AlertDescription>
+      </Alert>
+
       <Card>
         <CardHeader>
           <CardTitle>Upload 3D Assets</CardTitle>
         </CardHeader>
         <CardContent>
-          <div {...getRootProps()} className="border-2 border-dashed border-gray-300 rounded-md p-6 text-center cursor-pointer">
+          <div {...getRootProps()} className="border-2 border-dashed border-gray-300 rounded-md p-6 text-center cursor-pointer hover:border-primary transition-colors">
             <input {...getInputProps()} />
             {
               isDragActive ?
@@ -81,12 +103,14 @@ export default function AssetManager() {
             <CardTitle>Asset List</CardTitle>
           </CardHeader>
           <CardContent>
-            {assets.length === 0 ? (
+            {isLoading ? (
+              <p>Loading assets...</p>
+            ) : assets.length === 0 ? (
               <p>No assets uploaded yet.</p>
             ) : (
               <ul className="space-y-2">
                 {assets.map((asset, index) => (
-                  <li key={index} className="flex items-center justify-between p-2 bg-gray-100 rounded">
+                  <li key={index} className="flex items-center justify-between p-2 bg-gray-100 rounded hover:bg-gray-200 transition-colors">
                     <span className="flex items-center">
                       <File className="mr-2" size={20} />
                       {asset.name}
@@ -112,6 +136,15 @@ export default function AssetManager() {
           </CardContent>
         </Card>
       </div>
+
+      <Accordion type="single" collapsible>
+        <AccordionItem value="advanced-features">
+          <AccordionTrigger>Advanced Features</AccordionTrigger>
+          <AccordionContent>
+            <p>Coming soon: Asset editing, version control, and more advanced management features.</p>
+          </AccordionContent>
+        </AccordionItem>
+      </Accordion>
     </div>
   );
 }
