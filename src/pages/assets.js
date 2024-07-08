@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,61 +8,72 @@ import { Grid, List, Filter, Eye, Edit, Trash2, Share2, MessageSquare } from "lu
 import { motion, AnimatePresence } from "framer-motion";
 import { useAssets } from "@/context/AssetContext";
 import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
-import { useSession } from "next-auth/react";
-import { useRouter } from "next/router";
 import { useToast } from "@/components/ui/use-toast";
+import ProtectedRoute from '@/components/ProtectedRoute';
+import { z } from 'zod';
+
+const commentSchema = z.string().min(1, "Comment cannot be empty").max(500, "Comment is too long");
 
 export default function Assets() {
   const [viewMode, setViewMode] = useState('grid');
   const [selectedAsset, setSelectedAsset] = useState(null);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [filterType, setFilterType] = useState('all');
   const { assets, loading, error, updateAsset, deleteAsset, reorderAssets, addComment, shareAsset } = useAssets();
-  const { data: session } = useSession();
-  const router = useRouter();
   const { toast } = useToast();
 
-  if (!session) {
-    router.push('/login');
-    return null;
-  }
+  const filteredAssets = assets.filter(asset => 
+    asset.name.toLowerCase().includes(searchTerm.toLowerCase()) &&
+    (filterType === 'all' || asset.type === filterType)
+  );
 
-  const handleAssetClick = (asset) => {
+  const handleAssetClick = useCallback((asset) => {
     setSelectedAsset(asset);
-  };
+  }, []);
 
-  const handleDragEnd = (result) => {
+  const handleDragEnd = useCallback((result) => {
     if (!result.destination) return;
     reorderAssets(result.source.index, result.destination.index);
     toast({
       title: "Assets Reordered",
       description: "The order of your assets has been updated.",
     });
-  };
+  }, [reorderAssets, toast]);
 
-  const handleDeleteAsset = (id) => {
+  const handleDeleteAsset = useCallback((id) => {
     deleteAsset(id);
     toast({
       title: "Asset Deleted",
       description: "The asset has been successfully deleted.",
     });
-  };
+  }, [deleteAsset, toast]);
 
-  const handleAddComment = (assetId, comment) => {
-    addComment(assetId, comment);
-    toast({
-      title: "Comment Added",
-      description: "Your comment has been added to the asset.",
-    });
-  };
+  const handleAddComment = useCallback((assetId, comment) => {
+    try {
+      commentSchema.parse(comment);
+      addComment(assetId, comment);
+      toast({
+        title: "Comment Added",
+        description: "Your comment has been added to the asset.",
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: error.errors[0].message,
+        variant: "destructive",
+      });
+    }
+  }, [addComment, toast]);
 
-  const handleShareAsset = (assetId, recipientEmail) => {
+  const handleShareAsset = useCallback((assetId, recipientEmail) => {
     shareAsset(assetId, recipientEmail);
     toast({
       title: "Asset Shared",
       description: `The asset has been shared with ${recipientEmail}.`,
     });
-  };
+  }, [shareAsset, toast]);
 
-  const AssetCard = ({ asset, index }) => (
+  const AssetCard = useCallback(({ asset, index }) => (
     <Draggable draggableId={asset.id.toString()} index={index}>
       {(provided) => (
         <motion.div
@@ -137,62 +148,69 @@ export default function Assets() {
         </motion.div>
       )}
     </Draggable>
-  );
+  ), [viewMode, handleAssetClick, selectedAsset, updateAsset, handleDeleteAsset, handleShareAsset, handleAddComment]);
 
   if (loading) return <div>Loading assets...</div>;
   if (error) return <div>Error: {error}</div>;
 
   return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <h1 className="text-3xl font-bold">Assets</h1>
-        <Button>Upload New Asset</Button>
-      </div>
-
-      <div className="flex justify-between items-center">
-        <div className="flex space-x-2">
-          <Input placeholder="Search assets..." className="w-64" />
-          <Select>
-            <SelectTrigger className="w-[180px]">
-              <SelectValue placeholder="Filter by type" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Types</SelectItem>
-              <SelectItem value="3d-model">3D Model</SelectItem>
-              <SelectItem value="texture">Texture</SelectItem>
-              <SelectItem value="material">Material</SelectItem>
-            </SelectContent>
-          </Select>
+    <ProtectedRoute>
+      <div className="space-y-6">
+        <div className="flex justify-between items-center">
+          <h1 className="text-3xl font-bold">Assets</h1>
+          <Button>Upload New Asset</Button>
         </div>
-        <div className="flex space-x-2">
-          <Button variant={viewMode === 'grid' ? 'default' : 'outline'} size="icon" onClick={() => setViewMode('grid')}>
-            <Grid className="h-4 w-4" />
-          </Button>
-          <Button variant={viewMode === 'list' ? 'default' : 'outline'} size="icon" onClick={() => setViewMode('list')}>
-            <List className="h-4 w-4" />
-          </Button>
-        </div>
-      </div>
 
-      <DragDropContext onDragEnd={handleDragEnd}>
-        <Droppable droppableId="assets">
-          {(provided) => (
-            <AnimatePresence>
-              <motion.div
-                {...provided.droppableProps}
-                ref={provided.innerRef}
-                layout
-                className={viewMode === 'grid' ? 'grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6' : 'space-y-4'}
-              >
-                {assets.map((asset, index) => (
-                  <AssetCard key={asset.id} asset={asset} index={index} />
-                ))}
-                {provided.placeholder}
-              </motion.div>
-            </AnimatePresence>
-          )}
-        </Droppable>
-      </DragDropContext>
-    </div>
+        <div className="flex justify-between items-center">
+          <div className="flex space-x-2">
+            <Input 
+              placeholder="Search assets..." 
+              className="w-64" 
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+            <Select value={filterType} onValueChange={setFilterType}>
+              <SelectTrigger className="w-[180px]">
+                <SelectValue placeholder="Filter by type" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Types</SelectItem>
+                <SelectItem value="3D Model">3D Model</SelectItem>
+                <SelectItem value="Texture">Texture</SelectItem>
+                <SelectItem value="Material">Material</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="flex space-x-2">
+            <Button variant={viewMode === 'grid' ? 'default' : 'outline'} size="icon" onClick={() => setViewMode('grid')}>
+              <Grid className="h-4 w-4" />
+            </Button>
+            <Button variant={viewMode === 'list' ? 'default' : 'outline'} size="icon" onClick={() => setViewMode('list')}>
+              <List className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
+
+        <DragDropContext onDragEnd={handleDragEnd}>
+          <Droppable droppableId="assets">
+            {(provided) => (
+              <AnimatePresence>
+                <motion.div
+                  {...provided.droppableProps}
+                  ref={provided.innerRef}
+                  layout
+                  className={viewMode === 'grid' ? 'grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6' : 'space-y-4'}
+                >
+                  {filteredAssets.map((asset, index) => (
+                    <AssetCard key={asset.id} asset={asset} index={index} />
+                  ))}
+                  {provided.placeholder}
+                </motion.div>
+              </AnimatePresence>
+            )}
+          </Droppable>
+        </DragDropContext>
+      </div>
+    </ProtectedRoute>
   );
 }

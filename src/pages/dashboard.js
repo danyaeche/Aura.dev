@@ -1,6 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Upload, Image, Tag, Folder } from "lucide-react";
+import ProtectedRoute from '@/components/ProtectedRoute';
 
 export default function Dashboard() {
   const stats = [
@@ -11,51 +12,53 @@ export default function Dashboard() {
   ];
 
   return (
-    <div className="space-y-6">
-      <h1 className="text-3xl font-bold">Dashboard</h1>
-      
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-        {stats.map((stat, index) => (
-          <Card key={index}>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">
-                {stat.title}
-              </CardTitle>
-              <stat.icon className="h-4 w-4 text-muted-foreground" />
+    <ProtectedRoute>
+      <div className="space-y-6">
+        <h1 className="text-3xl font-bold">Dashboard</h1>
+        
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+          {stats.map((stat, index) => (
+            <Card key={index}>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">
+                  {stat.title}
+                </CardTitle>
+                <stat.icon className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{stat.value}</div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+
+        <div className="grid gap-6 md:grid-cols-2">
+          <Card>
+            <CardHeader>
+              <CardTitle>Recent Activity</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{stat.value}</div>
+              <p>Activity list will be implemented here.</p>
             </CardContent>
           </Card>
-        ))}
+          <Card>
+            <CardHeader>
+              <CardTitle>Quick Actions</CardTitle>
+            </CardHeader>
+            <CardContent className="flex flex-col space-y-2">
+              <Button>
+                <Upload className="mr-2 h-4 w-4" /> Upload New Asset
+              </Button>
+              <Button variant="outline">
+                <Folder className="mr-2 h-4 w-4" /> Create New Folder
+              </Button>
+              <Button variant="outline">
+                <Tag className="mr-2 h-4 w-4" /> Manage Labels
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
       </div>
-
-      <div className="grid gap-6 md:grid-cols-2">
-        <Card>
-          <CardHeader>
-            <CardTitle>Recent Activity</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p>Activity list will be implemented here.</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader>
-            <CardTitle>Quick Actions</CardTitle>
-          </CardHeader>
-          <CardContent className="flex flex-col space-y-2">
-            <Button>
-              <Upload className="mr-2 h-4 w-4" /> Upload New Asset
-            </Button>
-            <Button variant="outline">
-              <Folder className="mr-2 h-4 w-4" /> Create New Folder
-            </Button>
-            <Button variant="outline">
-              <Tag className="mr-2 h-4 w-4" /> Manage Labels
-            </Button>
-          </CardContent>
-        </Card>
-      </div>
-    </div>
+    </ProtectedRoute>
   );
 }
