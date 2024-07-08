@@ -9,7 +9,7 @@ import { TDSLoader } from 'three/examples/jsm/loaders/TDSLoader';
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import { Label } from "@/components/ui/label";
-import { RotateCw, Move, Grid, Box } from "lucide-react";
+import { RotateCw, Move, Grid, Box, Maximize, Minimize } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 
 export const ThreeViewer = ({ modelUrl }) => {
@@ -23,6 +23,7 @@ export const ThreeViewer = ({ modelUrl }) => {
   const [object, setObject] = useState(null);
   const [wireframe, setWireframe] = useState(false);
   const [modelInfo, setModelInfo] = useState(null);
+  const [isFullscreen, setIsFullscreen] = useState(false);
 
   useEffect(() => {
     if (!modelUrl || !mountRef.current) return;
@@ -36,7 +37,7 @@ export const ThreeViewer = ({ modelUrl }) => {
         const newScene = new THREE.Scene();
         const newCamera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
         const newRenderer = new THREE.WebGLRenderer({ antialias: true });
-        newRenderer.setSize(window.innerWidth / 2, window.innerHeight / 2);
+        newRenderer.setSize(window.innerWidth, window.innerHeight);
         mountRef.current.appendChild(newRenderer.domElement);
 
         // Lighting
@@ -152,6 +153,19 @@ export const ThreeViewer = ({ modelUrl }) => {
     };
   }, [modelUrl]);
 
+  useEffect(() => {
+    const handleResize = () => {
+      if (camera && renderer) {
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+      }
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, [camera, renderer]);
+
   const handleResetView = () => {
     if (controls) {
       controls.reset();
@@ -203,53 +217,61 @@ export const ThreeViewer = ({ modelUrl }) => {
     }
   };
 
+  const toggleFullscreen = () => {
+    setIsFullscreen(!isFullscreen);
+    if (!isFullscreen) {
+      mountRef.current.requestFullscreen();
+    } else {
+      document.exitFullscreen();
+    }
+  };
+
   if (isLoading) {
-    return <div className="flex items-center justify-center h-64 bg-gray-100">
-      <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-blue-500"></div>
+    return <div className="flex items-center justify-center h-screen bg-gray-100">
+      <div className="animate-spin rounded-full h-32 w-32 border-t-2 border-b-2 border-blue-500"></div>
     </div>;
   }
 
   if (error) {
-    return <div className="p-4 bg-red-100 border border-red-400 text-red-700 rounded">Error: {error}</div>;
+    return <div className="flex items-center justify-center h-screen bg-red-100 text-red-700 text-xl font-bold">{error}</div>;
   }
 
   return (
-    <div>
-      <div ref={mountRef}></div>
-      <div className="mt-4 space-y-4">
-        <div className="flex space-x-2">
-          <Button onClick={handleResetView}>Reset View</Button>
-          <Button onClick={handleRotate}><RotateCw className="mr-2 h-4 w-4" /> Rotate</Button>
-          <Button onClick={toggleWireframe}><Grid className="mr-2 h-4 w-4" /> Wireframe</Button>
-        </div>
-        <div>
-          <Label htmlFor="zoom">Zoom</Label>
-          <Slider
-            id="zoom"
-            min={0.1}
-            max={2}
-            step={0.1}
-            defaultValue={[1]}
-            onValueChange={handleZoom}
-          />
-        </div>
-        <div>
-          <Label>Pan</Label>
-          <div className="grid grid-cols-3 gap-2 mt-2">
-            <Button onClick={() => handlePan('left')} className="col-start-1"><Move className="h-4 w-4" /></Button>
-            <Button onClick={() => handlePan('up')} className="col-start-2"><Move className="h-4 w-4 rotate-90" /></Button>
-            <Button onClick={() => handlePan('right')} className="col-start-3"><Move className="h-4 w-4 rotate-180" /></Button>
-            <Button onClick={() => handlePan('down')} className="col-start-2"><Move className="h-4 w-4 -rotate-90" /></Button>
-          </div>
-        </div>
-        {modelInfo && (
-          <div className="mt-4">
-            <h3 className="text-lg font-semibold">Model Information</h3>
-            <p>Polygon Count: {modelInfo.polyCount}</p>
-            <p>File Size: {modelInfo.fileSize}</p>
-          </div>
-        )}
+    <div className={`relative ${isFullscreen ? 'fixed inset-0 z-50 bg-black' : ''}`}>
+      <div ref={mountRef} className="w-full h-full"></div>
+      <div className="absolute bottom-4 left-4 space-y-2">
+        <Button onClick={handleResetView}>Reset View</Button>
+        <Button onClick={handleRotate}><RotateCw className="mr-2 h-4 w-4" /> Rotate</Button>
+        <Button onClick={toggleWireframe}><Grid className="mr-2 h-4 w-4" /> Wireframe</Button>
+        <Button onClick={toggleFullscreen}>
+          {isFullscreen ? <Minimize className="mr-2 h-4 w-4" /> : <Maximize className="mr-2 h-4 w-4" />}
+          {isFullscreen ? 'Exit Fullscreen' : 'Fullscreen'}
+        </Button>
       </div>
+      <div className="absolute bottom-4 right-4 space-y-2">
+        <Label htmlFor="zoom">Zoom</Label>
+        <Slider
+          id="zoom"
+          min={0.1}
+          max={2}
+          step={0.1}
+          defaultValue={[1]}
+          onValueChange={handleZoom}
+        />
+        <div className="grid grid-cols-3 gap-2">
+          <Button onClick={() => handlePan('left')} className="col-start-1"><Move className="h-4 w-4" /></Button>
+          <Button onClick={() => handlePan('up')} className="col-start-2"><Move className="h-4 w-4 rotate-90" /></Button>
+          <Button onClick={() => handlePan('right')} className="col-start-3"><Move className="h-4 w-4 rotate-180" /></Button>
+          <Button onClick={() => handlePan('down')} className="col-start-2"><Move className="h-4 w-4 -rotate-90" /></Button>
+        </div>
+      </div>
+      {modelInfo && (
+        <div className="absolute top-4 left-4 bg-white bg-opacity-75 p-2 rounded">
+          <h3 className="text-lg font-semibold">Model Information</h3>
+          <p>Polygon Count: {modelInfo.polyCount}</p>
+          <p>File Size: {modelInfo.fileSize}</p>
+        </div>
+      )}
     </div>
   );
 };
