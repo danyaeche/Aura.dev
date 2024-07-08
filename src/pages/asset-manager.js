@@ -55,7 +55,8 @@ export default function AssetManager() {
           lastModified: file.lastModified,
           url: url,
           version: 1,
-          history: [{ version: 1, date: new Date().toISOString(), description: 'Initial upload' }]
+          history: [{ version: 1, date: new Date().toISOString(), description: 'Initial upload' }],
+          tags: []
         });
         setIsLoading(false);
         toast({
@@ -91,14 +92,17 @@ export default function AssetManager() {
   };
 
   const handleRename = (assetId, newName) => {
-    updateAsset(assetId, { 
-      name: newName,
-      version: assets.find(a => a.id === assetId).version + 1,
-      history: [
-        ...assets.find(a => a.id === assetId).history,
-        { version: assets.find(a => a.id === assetId).version + 1, date: new Date().toISOString(), description: 'Renamed asset' }
-      ]
-    });
+    const asset = assets.find(a => a.id === assetId);
+    if (asset) {
+      updateAsset(assetId, { 
+        name: newName,
+        version: (asset.version || 0) + 1,
+        history: [
+          ...(asset.history || []),
+          { version: (asset.version || 0) + 1, date: new Date().toISOString(), description: 'Renamed asset' }
+        ]
+      });
+    }
   };
 
   const sortedAssets = [...assets].sort((a, b) => {
@@ -237,7 +241,7 @@ export default function AssetManager() {
                                   <div>
                                     <Label>Current Tags</Label>
                                     <div className="flex flex-wrap gap-2 mt-2">
-                                      {asset.tags.map((tag, index) => (
+                                      {asset.tags && asset.tags.map((tag, index) => (
                                         <span key={index} className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-sm flex items-center">
                                           {tag}
                                           <button onClick={() => handleRemoveTag(asset.id, tag)} className="ml-1 text-blue-600 hover:text-blue-800">
@@ -250,7 +254,7 @@ export default function AssetManager() {
                                   <div>
                                     <Label>Version History</Label>
                                     <ul className="mt-2 space-y-2">
-                                      {asset.history.map((version, index) => (
+                                      {asset.history && asset.history.map((version, index) => (
                                         <li key={index} className="text-sm">
                                           Version {version.version}: {version.description} ({new Date(version.date).toLocaleString()})
                                         </li>
