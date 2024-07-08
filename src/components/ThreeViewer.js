@@ -27,6 +27,8 @@ export const ThreeViewer = ({ modelUrl }) => {
 
     const init = () => {
       try {
+        console.log('Initializing 3D viewer with modelUrl:', modelUrl);
+
         // Scene setup
         const newScene = new THREE.Scene();
         const newCamera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
@@ -50,10 +52,11 @@ export const ThreeViewer = ({ modelUrl }) => {
         setControls(newControls);
 
         // Model loading
-        const extension = modelUrl.split('.').pop().toLowerCase();
-        let loader;
+        const fileExtension = modelUrl.split('.').pop().toLowerCase();
+        console.log('Detected file extension:', fileExtension);
 
-        switch (extension) {
+        let loader;
+        switch (fileExtension) {
           case 'gltf':
           case 'glb':
             loader = new GLTFLoader();
@@ -71,7 +74,7 @@ export const ThreeViewer = ({ modelUrl }) => {
             loader = new TDSLoader();
             break;
           default:
-            throw new Error(`Unsupported file format: ${extension}`);
+            throw new Error(`Unsupported file format: ${fileExtension}`);
         }
 
         loader.load(

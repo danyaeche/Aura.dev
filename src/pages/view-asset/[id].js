@@ -10,20 +10,41 @@ export default function ViewAsset() {
   const { id } = router.query;
   const { assets } = useAssets();
   const [asset, setAsset] = useState(null);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     if (id && assets) {
       const foundAsset = assets.find(a => a.id.toString() === id);
       if (foundAsset) {
         setAsset(foundAsset);
+        console.log('Asset found:', foundAsset);
       } else {
         console.error('Asset not found');
+        setError('Asset not found');
       }
     }
   }, [id, assets]);
 
+  if (error) {
+    return (
+      <div className="fixed inset-0 bg-black flex items-center justify-center">
+        <div className="bg-white p-6 rounded-lg">
+          <h2 className="text-2xl font-bold mb-4">Error</h2>
+          <p className="text-red-600">{error}</p>
+          <Link href="/asset-manager">
+            <Button className="mt-4">Back to Asset Manager</Button>
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
   if (!asset) {
-    return <div>Loading asset...</div>;
+    return (
+      <div className="fixed inset-0 bg-black flex items-center justify-center">
+        <div className="text-white text-2xl">Loading asset...</div>
+      </div>
+    );
   }
 
   return (
