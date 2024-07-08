@@ -24,6 +24,7 @@ export const ThreeViewer = ({ modelUrl }) => {
   const [wireframe, setWireframe] = useState(false);
   const [modelInfo, setModelInfo] = useState(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [loadingProgress, setLoadingProgress] = useState(0);
 
   useEffect(() => {
     if (!modelUrl || !mountRef.current) return;
@@ -31,13 +32,14 @@ export const ThreeViewer = ({ modelUrl }) => {
     const init = () => {
       setIsLoading(true);
       setError(null);
+      setLoadingProgress(0);
 
       try {
         // Scene setup
         const newScene = new THREE.Scene();
-        const newCamera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        const newCamera = new THREE.PerspectiveCamera(75, mountRef.current.clientWidth / mountRef.current.clientHeight, 0.1, 1000);
         const newRenderer = new THREE.WebGLRenderer({ antialias: true });
-        newRenderer.setSize(window.innerWidth, window.innerHeight);
+        newRenderer.setSize(mountRef.current.clientWidth, mountRef.current.clientHeight);
         mountRef.current.appendChild(newRenderer.domElement);
 
         // Lighting
@@ -83,6 +85,7 @@ export const ThreeViewer = ({ modelUrl }) => {
         loader.load(
           modelUrl,
           (loadedObject) => {
+            console.log('Model loaded successfully:', loadedObject);
             const newObject = loadedObject.scene || loadedObject;
             newScene.add(newObject);
             setObject(newObject);
@@ -113,19 +116,22 @@ export const ThreeViewer = ({ modelUrl }) => {
             });
 
             setIsLoading(false);
+            setLoadingProgress(100);
           },
           (xhr) => {
-            console.log((xhr.loaded / xhr.total * 100) + '% loaded');
+            const progress = (xhr.loaded / xhr.total) * 100;
+            console.log(progress.toFixed(2) + '% loaded');
+            setLoadingProgress(progress);
           },
           (error) => {
-            console.error('An error happened', error);
-            setError('Failed to load the 3D model');
+            console.error('Error loading 3D model:', error);
+            setError('Failed to load the 3D model: ' + error.message);
             setIsLoading(false);
           }
         );
       } catch (err) {
         console.error('Error initializing 3D viewer:', err);
-        setError('Failed to initialize 3D viewer');
+        setError('Failed to initialize 3D viewer: ' + err.message);
         setIsLoading(false);
       }
     };
@@ -155,10 +161,10 @@ export const ThreeViewer = ({ modelUrl }) => {
 
   useEffect(() => {
     const handleResize = () => {
-      if (camera && renderer) {
-        camera.aspect = window.innerWidth / window.innerHeight;
+      if (camera && renderer && mountRef.current) {
+        camera.aspect = mountRef.current.clientWidth / mountRef.current.clientHeight;
         camera.updateProjectionMatrix();
-        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setSize(mountRef.current.clientWidth, mountRef.current.clientHeight);
       }
     };
 
@@ -227,17 +233,24 @@ export const ThreeViewer = ({ modelUrl }) => {
   };
 
   if (isLoading) {
-    return <div className="flex items-center justify-center h-screen bg-gray-100">
-      <div className="animate-spin rounded-full h-32 w-32 border-t-2 border-b-2 border-blue-500"></div>
-    </div>;
+    return (
+      <div className="flex flex-col items-center justify-center h-full bg-gray-100">
+        <div className="animate-spin rounded-full h-32 w-32 border-t-2 border-b-2 border-blue-500 mb-4"></div>
+        <p>Loading: {loadingProgress.toFixed(2)}%</p>
+      </div>
+    );
   }
 
   if (error) {
-    return <div className="flex items-center justify-center h-screen bg-red-100 text-red-700 text-xl font-bold">{error}</div>;
+    return (
+      <div className="flex items-center justify-center h-full bg-red-100 text-red-700 text-xl font-bold p-4">
+        <p>{error}</p>
+      </div>
+    );
   }
 
   return (
-    <div className={`relative ${isFullscreen ? 'fixed inset-0 z-50 bg-black' : ''}`}>
+    <div className={`relative w-full h-full ${isFullscreen ? 'fixed inset-0 z-50 bg-black' : ''}`}>
       <div ref={mountRef} className="w-full h-full"></div>
       <div className="absolute bottom-4 left-4 space-y-2">
         <Button onClick={handleResetView}>Reset View</Button>
