@@ -8,37 +8,47 @@ import { STLLoader } from 'three/examples/jsm/loaders/STLLoader';
 import { TDSLoader } from 'three/examples/jsm/loaders/TDSLoader';
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
+import { Label } from "@/components/ui/label";
+import { RotateCw, Move } from "lucide-react";
 
 export const ThreeViewer = ({ modelUrl }) => {
   const mountRef = useRef(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [scene, setScene] = useState(null);
+  const [camera, setCamera] = useState(null);
+  const [renderer, setRenderer] = useState(null);
+  const [controls, setControls] = useState(null);
+  const [object, setObject] = useState(null);
 
   useEffect(() => {
     if (!modelUrl) return;
-
-    let scene, camera, renderer, controls, object;
 
     const init = () => {
       setIsLoading(true);
       setError(null);
 
       // Scene setup
-      scene = new THREE.Scene();
-      camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-      renderer = new THREE.WebGLRenderer({ antialias: true });
-      renderer.setSize(window.innerWidth / 2, window.innerHeight / 2);
-      mountRef.current.appendChild(renderer.domElement);
+      const newScene = new THREE.Scene();
+      const newCamera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+      const newRenderer = new THREE.WebGLRenderer({ antialias: true });
+      newRenderer.setSize(window.innerWidth / 2, window.innerHeight / 2);
+      mountRef.current.appendChild(newRenderer.domElement);
 
       // Lighting
       const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
-      scene.add(ambientLight);
+      newScene.add(ambientLight);
       const pointLight = new THREE.PointLight(0xffffff, 1);
       pointLight.position.set(5, 5, 5);
-      scene.add(pointLight);
+      newScene.add(pointLight);
 
       // Controls
-      controls = new OrbitControls(camera, renderer.domElement);
+      const newControls = new OrbitControls(newCamera, newRenderer.domElement);
+
+      setScene(newScene);
+      setCamera(newCamera);
+      setRenderer(newRenderer);
+      setControls(newControls);
 
       // Model loading
       const extension = modelUrl.split('.').pop().toLowerCase();
@@ -70,20 +80,21 @@ export const ThreeViewer = ({ modelUrl }) => {
       loader.load(
         modelUrl,
         (loadedObject) => {
-          object = loadedObject.scene || loadedObject;
-          scene.add(object);
+          const newObject = loadedObject.scene || loadedObject;
+          newScene.add(newObject);
+          setObject(newObject);
 
           // Adjust camera position
-          const box = new THREE.Box3().setFromObject(scene);
+          const box = new THREE.Box3().setFromObject(newScene);
           const center = box.getCenter(new THREE.Vector3());
           const size = box.getSize(new THREE.Vector3());
           const maxDim = Math.max(size.x, size.y, size.z);
-          const fov = camera.fov * (Math.PI / 180);
+          const fov = newCamera.fov * (Math.PI / 180);
           let cameraZ = Math.abs(maxDim / 2 / Math.tan(fov / 2));
           cameraZ *= 1.5;
-          camera.position.set(center.x, center.y, center.z + cameraZ);
-          camera.lookAt(center);
-          controls.update();
+          newCamera.position.set(center.x, center.y, center.z + cameraZ);
+          newCamera.lookAt(center);
+          newControls.update();
 
           setIsLoading(false);
         },
@@ -96,17 +107,17 @@ export const ThreeViewer = ({ modelUrl }) => {
           setIsLoading(false);
         }
       );
-
-      // Animation loop
-      const animate = () => {
-        requestAnimationFrame(animate);
-        controls.update();
-        renderer.render(scene, camera);
-      };
-      animate();
     };
 
     init();
+
+    // Animation loop
+    const animate = () => {
+      requestAnimationFrame(animate);
+      if (controls) controls.update();
+      if (renderer && scene && camera) renderer.render(scene, camera);
+    };
+    animate();
 
     // Cleanup
     return () => {
@@ -130,6 +141,33 @@ export const ThreeViewer = ({ modelUrl }) => {
     }
   };
 
+  const handleRotate = () => {
+    if (object) {
+      object.rotation.y += Math.PI / 4; // Rotate 45 degrees
+    }
+  };
+
+  const handlePan = (direction) => {
+    if (camera) {
+      const speed = 0.1;
+      switch (direction) {
+        case 'left':
+          camera.position.x -= speed;
+          break;
+        case 'right':
+          camera.position.x += speed;
+          break;
+        case 'up':
+          camera.position.y += speed;
+          break;
+        case 'down':
+          camera.position.y -= speed;
+          break;
+      }
+      camera.updateProjectionMatrix();
+    }
+  };
+
   if (isLoading) {
     return <div>Loading 3D model...</div>;
   }
@@ -142,7 +180,10 @@ export const ThreeViewer = ({ modelUrl }) => {
     <div>
       <div ref={mountRef}></div>
       <div className="mt-4 space-y-4">
-        <Button onClick={handleResetView}>Reset View</Button>
+        <div className="flex space-x-2">
+          <Button onClick={handleResetView}>Reset View</Button>
+          <Button onClick={handleRotate}><RotateCw className="mr-2 h-4 w-4" /> Rotate</Button>
+        </div>
         <div>
           <Label htmlFor="zoom">Zoom</Label>
           <Slider
@@ -153,6 +194,15 @@ export const ThreeViewer = ({ modelUrl }) => {
             defaultValue={[1]}
             onValueChange={handleZoom}
           />
+        </div>
+        <div>
+          <Label>Pan</Label>
+          <div className="grid grid-cols-3 gap-2 mt-2">
+            <Button onClick={() => handlePan('left')} className="col-start-1"><Move className="h-4 w-4" /></Button>
+            <Button onClick={() => handlePan('up')} className="col-start-2"><Move className="h-4 w-4 rotate-90" /></Button>
+            <Button onClick={() => handlePan('right')} className="col-start-3"><Move className="h-4 w-4 rotate-180" /></Button>
+            <Button onClick={() => handlePan('down')} className="col-start-2"><Move className="h-4 w-4 -rotate-90" /></Button>
+          </div>
         </div>
       </div>
     </div>
