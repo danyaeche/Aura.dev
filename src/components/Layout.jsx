@@ -40,7 +40,7 @@ export const Layout = ({ children }) => {
         } fixed inset-y-0 left-0 z-50 w-64 bg-white dark:bg-gray-800 shadow-lg transform transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:inset-0`}
       >
         <div className="flex items-center justify-between h-16 px-6 bg-gray-900 text-white">
-          <span className="text-2xl font-semibold">3D Asset Hub</span>
+          <span className="text-2xl font-semibold">Aura</span>
           <Button
             variant="ghost"
             size="icon"

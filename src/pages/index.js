@@ -8,7 +8,7 @@ export default function LandingPage() {
     <div className="flex flex-col min-h-screen">
       <header className="bg-white shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
-          <h1 className="text-3xl font-bold text-gray-900">3D Asset Hub</h1>
+          <h1 className="text-3xl font-bold text-gray-900">Aura</h1>
           <nav>
             <Button asChild variant="ghost" className="mr-2">
               <Link href="/login">Login</Link>
@@ -125,7 +125,7 @@ export default function LandingPage() {
             </div>
           </div>
           <div className="mt-8 pt-8 border-t border-gray-700 text-center">
-            <p>&copy; 2023 3D Asset Hub. All rights reserved.</p>
+            <p>&copy; 2023 Aura. All rights reserved.</p>
           </div>
         </div>
       </footer>

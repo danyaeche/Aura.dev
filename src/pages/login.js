@@ -23,7 +23,7 @@ export default function Login() {
     <div className="flex items-center justify-center min-h-screen bg-gray-100">
       <Card className="w-full max-w-md">
         <CardHeader>
-          <CardTitle className="text-2xl text-center">Login to 3D Asset Hub</CardTitle>
+          <CardTitle className="text-2xl text-center">Login to Aura</CardTitle>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit}>
