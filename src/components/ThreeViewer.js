@@ -52,7 +52,12 @@ export const ThreeViewer = ({ modelUrl }) => {
         setControls(newControls);
 
         // Model loading
-        const fileExtension = modelUrl.split('.').pop().toLowerCase();
+        const getFileExtension = (url) => {
+          const parts = url.split('.');
+          return parts.length > 1 ? parts.pop().toLowerCase() : null;
+        };
+
+        const fileExtension = getFileExtension(modelUrl);
         console.log('Detected file extension:', fileExtension);
 
         let loader;
@@ -74,7 +79,7 @@ export const ThreeViewer = ({ modelUrl }) => {
             loader = new TDSLoader();
             break;
           default:
-            throw new Error(`Unsupported file format: ${fileExtension}`);
+            throw new Error(`Unsupported file format: ${fileExtension || 'unknown'}`);
         }
 
         loader.load(
