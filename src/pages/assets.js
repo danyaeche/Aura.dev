@@ -9,7 +9,6 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useAssets } from "@/context/AssetContext";
 import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
 import { useToast } from "@/components/ui/use-toast";
-import ProtectedRoute from '@/components/ProtectedRoute';
 import { z } from 'zod';
 
 const commentSchema = z.string().min(1, "Comment cannot be empty").max(500, "Comment is too long");
@@ -154,63 +153,61 @@ export default function Assets() {
   if (error) return <div>Error: {error}</div>;
 
   return (
-    <ProtectedRoute>
-      <div className="space-y-6">
-        <div className="flex justify-between items-center">
-          <h1 className="text-3xl font-bold">Assets</h1>
-          <Button>Upload New Asset</Button>
-        </div>
-
-        <div className="flex justify-between items-center">
-          <div className="flex space-x-2">
-            <Input 
-              placeholder="Search assets..." 
-              className="w-64" 
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
-            <Select value={filterType} onValueChange={setFilterType}>
-              <SelectTrigger className="w-[180px]">
-                <SelectValue placeholder="Filter by type" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Types</SelectItem>
-                <SelectItem value="3D Model">3D Model</SelectItem>
-                <SelectItem value="Texture">Texture</SelectItem>
-                <SelectItem value="Material">Material</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="flex space-x-2">
-            <Button variant={viewMode === 'grid' ? 'default' : 'outline'} size="icon" onClick={() => setViewMode('grid')}>
-              <Grid className="h-4 w-4" />
-            </Button>
-            <Button variant={viewMode === 'list' ? 'default' : 'outline'} size="icon" onClick={() => setViewMode('list')}>
-              <List className="h-4 w-4" />
-            </Button>
-          </div>
-        </div>
-
-        <DragDropContext onDragEnd={handleDragEnd}>
-          <Droppable droppableId="assets">
-            {(provided) => (
-              <AnimatePresence>
-                <motion.div
-                  {...provided.droppableProps}
-                  ref={provided.innerRef}
-                  layout
-                  className={viewMode === 'grid' ? 'grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6' : 'space-y-4'}
-                >
-                  {filteredAssets.map((asset, index) => (
-                    <AssetCard key={asset.id} asset={asset} index={index} />
-                  ))}
-                  {provided.placeholder}
-                </motion.div>
-              </AnimatePresence>
-            )}
-          </Droppable>
-        </DragDropContext>
+    <div className="space-y-6">
+      <div className="flex justify-between items-center">
+        <h1 className="text-3xl font-bold">Assets</h1>
+        <Button>Upload New Asset</Button>
       </div>
-    </ProtectedRoute>
+
+      <div className="flex justify-between items-center">
+        <div className="flex space-x-2">
+          <Input 
+            placeholder="Search assets..." 
+            className="w-64" 
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
+          <Select value={filterType} onValueChange={setFilterType}>
+            <SelectTrigger className="w-[180px]">
+              <SelectValue placeholder="Filter by type" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Types</SelectItem>
+              <SelectItem value="3D Model">3D Model</SelectItem>
+              <SelectItem value="Texture">Texture</SelectItem>
+              <SelectItem value="Material">Material</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="flex space-x-2">
+          <Button variant={viewMode === 'grid' ? 'default' : 'outline'} size="icon" onClick={() => setViewMode('grid')}>
+            <Grid className="h-4 w-4" />
+          </Button>
+          <Button variant={viewMode === 'list' ? 'default' : 'outline'} size="icon" onClick={() => setViewMode('list')}>
+            <List className="h-4 w-4" />
+          </Button>
+        </div>
+      </div>
+
+      <DragDropContext onDragEnd={handleDragEnd}>
+        <Droppable droppableId="assets">
+          {(provided) => (
+            <AnimatePresence>
+              <motion.div
+                {...provided.droppableProps}
+                ref={provided.innerRef}
+                layout
+                className={viewMode === 'grid' ? 'grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6' : 'space-y-4'}
+              >
+                {filteredAssets.map((asset, index) => (
+                  <AssetCard key={asset.id} asset={asset} index={index} />
+                ))}
+                {provided.placeholder}
+              </motion.div>
+            </AnimatePresence>
+          )}
+        </Droppable>
+      </DragDropContext>
+    </div>
   );
 }
