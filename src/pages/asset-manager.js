@@ -44,13 +44,14 @@ export default function AssetManager() {
         });
       };
       reader.onload = () => {
+        const url = URL.createObjectURL(file);
         addAsset({
           name: file.name,
           type: file.type.startsWith('model') ? '3D Model' : 'Other',
           fileType: file.name.split('.').pop(),
           size: file.size,
           lastModified: file.lastModified,
-          url: URL.createObjectURL(file)
+          url: url
         });
         setIsLoading(false);
         toast({
