@@ -5,15 +5,18 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/components/ui/use-toast";
-import { Upload, File, Info } from "lucide-react";
+import { Upload, File, Info, Tag, X } from "lucide-react";
 import { ThreeViewer } from '@/components/ThreeViewer';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { useAssets } from '@/context/AssetContext';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 
 export default function AssetManager() {
-  const [assets, setAssets] = useState([]);
+  const { assets, addAsset, updateAsset, addTag, removeTag } = useAssets();
   const [selectedAsset, setSelectedAsset] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [newTag, setNewTag] = useState('');
   const { toast } = useToast();
 
   const onDrop = useCallback((acceptedFiles) => {
@@ -37,13 +40,14 @@ export default function AssetManager() {
         });
       };
       reader.onload = () => {
-        setAssets(prevAssets => [...prevAssets, {
+        addAsset({
           name: file.name,
-          type: file.type,
+          type: file.type.startsWith('model') ? '3D Model' : 'Other',
+          fileType: file.name.split('.').pop(),
           size: file.size,
           lastModified: file.lastModified,
           url: URL.createObjectURL(file)
-        }]);
+        });
         setIsLoading(false);
         toast({
           title: "File Uploaded",
@@ -52,7 +56,7 @@ export default function AssetManager() {
       };
       reader.readAsArrayBuffer(file);
     });
-  }, [toast]);
+  }, [addAsset, toast]);
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
@@ -66,6 +70,21 @@ export default function AssetManager() {
     }
   });
 
+  const handleAddTag = (assetId) => {
+    if (newTag.trim()) {
+      addTag(assetId, newTag.trim());
+      setNewTag('');
+    }
+  };
+
+  const handleRemoveTag = (assetId, tag) => {
+    removeTag(assetId, tag);
+  };
+
+  const handleRename = (assetId, newName) => {
+    updateAsset(assetId, { name: newName });
+  };
+
   return (
     <div className="space-y-6">
       <h1 className="text-3xl font-bold">3D Asset Manager</h1>
@@ -76,7 +95,7 @@ export default function AssetManager() {
         <AlertDescription>
           Upload your 3D models by dragging and dropping files or clicking the upload area. 
           Supported formats include .3ds, .obj, .glb, .gltf, .stl, and .fbx. 
-          Once uploaded, you can view your models in the 3D viewer below.
+          Once uploaded, you can view your models in the 3D viewer, add tags, and manage your assets.
         </AlertDescription>
       </Alert>
 
@@ -109,13 +128,60 @@ export default function AssetManager() {
               <p>No assets uploaded yet.</p>
             ) : (
               <ul className="space-y-2">
-                {assets.map((asset, index) => (
-                  <li key={index} className="flex items-center justify-between p-2 bg-gray-100 rounded hover:bg-gray-200 transition-colors">
+                {assets.map((asset) => (
+                  <li key={asset.id} className="flex items-center justify-between p-2 bg-gray-100 rounded hover:bg-gray-200 transition-colors">
                     <span className="flex items-center">
                       <File className="mr-2" size={20} />
                       {asset.name}
                     </span>
-                    <Button onClick={() => setSelectedAsset(asset)}>View</Button>
+                    <div className="flex space-x-2">
+                      <Dialog>
+                        <DialogTrigger asChild>
+                          <Button variant="outline" size="sm">Edit</Button>
+                        </DialogTrigger>
+                        <DialogContent>
+                          <DialogHeader>
+                            <DialogTitle>Edit Asset: {asset.name}</DialogTitle>
+                          </DialogHeader>
+                          <div className="space-y-4">
+                            <div>
+                              <Label htmlFor="assetName">Asset Name</Label>
+                              <Input
+                                id="assetName"
+                                value={asset.name}
+                                onChange={(e) => handleRename(asset.id, e.target.value)}
+                              />
+                            </div>
+                            <div>
+                              <Label htmlFor="newTag">Add Tag</Label>
+                              <div className="flex space-x-2">
+                                <Input
+                                  id="newTag"
+                                  value={newTag}
+                                  onChange={(e) => setNewTag(e.target.value)}
+                                  placeholder="Enter new tag"
+                                />
+                                <Button onClick={() => handleAddTag(asset.id)}>Add</Button>
+                              </div>
+                            </div>
+                            <div>
+                              <Label>Current Tags</Label>
+                              <div className="flex flex-wrap gap-2 mt-2">
+                                {asset.tags.map((tag, index) => (
+                                  <span key={index} className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-sm flex items-center">
+                                    {tag}
+                                    <button onClick={() => handleRemoveTag(asset.id, tag)} className="ml-1 text-blue-600 hover:text-blue-800">
+                                      <X size={14} />
+                                    </button>
+                                  </span>
+                                ))}
+                              </div>
+                            </div>
+                          </div>
+                        </DialogContent>
+                      </Dialog>
+                      <Button onClick={() => setSelectedAsset(asset)}>View</Button>
+                    </div>
                   </li>
                 ))}
               </ul>
@@ -141,7 +207,7 @@ export default function AssetManager() {
         <AccordionItem value="advanced-features">
           <AccordionTrigger>Advanced Features</AccordionTrigger>
           <AccordionContent>
-            <p>Coming soon: Asset editing, version control, and more advanced management features.</p>
+            <p>Coming soon: More advanced editing features, version control, and collaborative tools.</p>
           </AccordionContent>
         </AccordionItem>
       </Accordion>
