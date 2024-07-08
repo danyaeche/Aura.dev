@@ -13,7 +13,8 @@ import {
   Search,
   Sun,
   Moon,
-  User
+  User,
+  Box
 } from 'lucide-react';
 import { useTheme } from '@/context/ThemeContext';
 
@@ -25,6 +26,7 @@ export const Layout = ({ children }) => {
   const navItems = [
     { icon: LayoutDashboard, label: 'Dashboard', href: '/dashboard' },
     { icon: Image, label: 'Assets', href: '/assets' },
+    { icon: Box, label: '3D Asset Manager', href: '/asset-manager' },
     { icon: Tags, label: 'Labels', href: '/labels' },
     { icon: Settings, label: 'Settings', href: '/settings' },
   ];

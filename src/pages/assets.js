@@ -4,12 +4,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Grid, List, Filter, Eye, Edit, Trash2, Share2, MessageSquare } from "lucide-react";
+import { Grid, List, Filter, Eye, Edit, Trash2, Share2, MessageSquare, Box } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAssets } from "@/context/AssetContext";
 import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
 import { useToast } from "@/components/ui/use-toast";
 import { z } from 'zod';
+import Link from 'next/link';
 
 const commentSchema = z.string().min(1, "Comment cannot be empty").max(500, "Comment is too long");
 
@@ -156,7 +157,15 @@ export default function Assets() {
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h1 className="text-3xl font-bold">Assets</h1>
-        <Button>Upload New Asset</Button>
+        <div>
+          <Button className="mr-2">Upload New Asset</Button>
+          <Button asChild>
+            <Link href="/asset-manager">
+              <Box className="mr-2 h-4 w-4" />
+              3D Asset Manager
+            </Link>
+          </Button>
+        </div>
       </div>
 
       <div className="flex justify-between items-center">
