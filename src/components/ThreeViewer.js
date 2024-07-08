@@ -25,111 +25,116 @@ export const ThreeViewer = ({ modelUrl }) => {
   const [modelInfo, setModelInfo] = useState(null);
 
   useEffect(() => {
-    if (!modelUrl) return;
+    if (!modelUrl || !mountRef.current) return;
 
     const init = () => {
       setIsLoading(true);
       setError(null);
 
-      // Scene setup
-      const newScene = new THREE.Scene();
-      const newCamera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-      const newRenderer = new THREE.WebGLRenderer({ antialias: true });
-      newRenderer.setSize(window.innerWidth / 2, window.innerHeight / 2);
-      mountRef.current.appendChild(newRenderer.domElement);
+      try {
+        // Scene setup
+        const newScene = new THREE.Scene();
+        const newCamera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        const newRenderer = new THREE.WebGLRenderer({ antialias: true });
+        newRenderer.setSize(window.innerWidth / 2, window.innerHeight / 2);
+        mountRef.current.appendChild(newRenderer.domElement);
 
-      // Lighting
-      const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
-      newScene.add(ambientLight);
-      const pointLight = new THREE.PointLight(0xffffff, 1);
-      pointLight.position.set(5, 5, 5);
-      newScene.add(pointLight);
+        // Lighting
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+        newScene.add(ambientLight);
+        const pointLight = new THREE.PointLight(0xffffff, 1);
+        pointLight.position.set(5, 5, 5);
+        newScene.add(pointLight);
 
-      // Controls
-      const newControls = new OrbitControls(newCamera, newRenderer.domElement);
+        // Controls
+        const newControls = new OrbitControls(newCamera, newRenderer.domElement);
 
-      setScene(newScene);
-      setCamera(newCamera);
-      setRenderer(newRenderer);
-      setControls(newControls);
+        setScene(newScene);
+        setCamera(newCamera);
+        setRenderer(newRenderer);
+        setControls(newControls);
 
-      // Model loading
-      const extension = modelUrl.split('.').pop().toLowerCase();
-      let loader;
+        // Model loading
+        const extension = modelUrl.split('.').pop().toLowerCase();
+        let loader;
 
-      switch (extension) {
-        case 'gltf':
-        case 'glb':
-          loader = new GLTFLoader();
-          break;
-        case 'obj':
-          loader = new OBJLoader();
-          break;
-        case 'fbx':
-          loader = new FBXLoader();
-          break;
-        case 'stl':
-          loader = new STLLoader();
-          break;
-        case '3ds':
-          loader = new TDSLoader();
-          break;
-        default:
-          setError('Unsupported file format');
-          setIsLoading(false);
-          return;
-      }
-
-      loader.load(
-        modelUrl,
-        (loadedObject) => {
-          const newObject = loadedObject.scene || loadedObject;
-          newScene.add(newObject);
-          setObject(newObject);
-
-          // Adjust camera position
-          const box = new THREE.Box3().setFromObject(newScene);
-          const center = box.getCenter(new THREE.Vector3());
-          const size = box.getSize(new THREE.Vector3());
-          const maxDim = Math.max(size.x, size.y, size.z);
-          const fov = newCamera.fov * (Math.PI / 180);
-          let cameraZ = Math.abs(maxDim / 2 / Math.tan(fov / 2));
-          cameraZ *= 1.5;
-          newCamera.position.set(center.x, center.y, center.z + cameraZ);
-          newCamera.lookAt(center);
-          newControls.update();
-
-          // Get model info
-          let polyCount = 0;
-          newObject.traverse((child) => {
-            if (child.isMesh) {
-              polyCount += child.geometry.attributes.position.count / 3;
-            }
-          });
-
-          setModelInfo({
-            polyCount: Math.round(polyCount),
-            fileSize: (loadedObject.byteLength / 1024 / 1024).toFixed(2) + ' MB'
-          });
-
-          setIsLoading(false);
-        },
-        (xhr) => {
-          console.log((xhr.loaded / xhr.total * 100) + '% loaded');
-        },
-        (error) => {
-          console.error('An error happened', error);
-          setError('Failed to load the 3D model');
-          setIsLoading(false);
+        switch (extension) {
+          case 'gltf':
+          case 'glb':
+            loader = new GLTFLoader();
+            break;
+          case 'obj':
+            loader = new OBJLoader();
+            break;
+          case 'fbx':
+            loader = new FBXLoader();
+            break;
+          case 'stl':
+            loader = new STLLoader();
+            break;
+          case '3ds':
+            loader = new TDSLoader();
+            break;
+          default:
+            throw new Error('Unsupported file format');
         }
-      );
+
+        loader.load(
+          modelUrl,
+          (loadedObject) => {
+            const newObject = loadedObject.scene || loadedObject;
+            newScene.add(newObject);
+            setObject(newObject);
+
+            // Adjust camera position
+            const box = new THREE.Box3().setFromObject(newScene);
+            const center = box.getCenter(new THREE.Vector3());
+            const size = box.getSize(new THREE.Vector3());
+            const maxDim = Math.max(size.x, size.y, size.z);
+            const fov = newCamera.fov * (Math.PI / 180);
+            let cameraZ = Math.abs(maxDim / 2 / Math.tan(fov / 2));
+            cameraZ *= 1.5;
+            newCamera.position.set(center.x, center.y, center.z + cameraZ);
+            newCamera.lookAt(center);
+            newControls.update();
+
+            // Get model info
+            let polyCount = 0;
+            newObject.traverse((child) => {
+              if (child.isMesh) {
+                polyCount += child.geometry.attributes.position.count / 3;
+              }
+            });
+
+            setModelInfo({
+              polyCount: Math.round(polyCount),
+              fileSize: (loadedObject.byteLength / 1024 / 1024).toFixed(2) + ' MB'
+            });
+
+            setIsLoading(false);
+          },
+          (xhr) => {
+            console.log((xhr.loaded / xhr.total * 100) + '% loaded');
+          },
+          (error) => {
+            console.error('An error happened', error);
+            setError('Failed to load the 3D model');
+            setIsLoading(false);
+          }
+        );
+      } catch (err) {
+        console.error('Error initializing 3D viewer:', err);
+        setError('Failed to initialize 3D viewer');
+        setIsLoading(false);
+      }
     };
 
     init();
 
     // Animation loop
+    let animationFrameId;
     const animate = () => {
-      requestAnimationFrame(animate);
+      animationFrameId = requestAnimationFrame(animate);
       if (controls) controls.update();
       if (renderer && scene && camera) renderer.render(scene, camera);
     };
@@ -137,9 +142,12 @@ export const ThreeViewer = ({ modelUrl }) => {
 
     // Cleanup
     return () => {
+      cancelAnimationFrame(animationFrameId);
       if (renderer) {
         renderer.dispose();
-        mountRef.current.removeChild(renderer.domElement);
+        if (mountRef.current) {
+          mountRef.current.removeChild(renderer.domElement);
+        }
       }
     };
   }, [modelUrl]);
@@ -196,11 +204,13 @@ export const ThreeViewer = ({ modelUrl }) => {
   };
 
   if (isLoading) {
-    return <div>Loading 3D model...</div>;
+    return <div className="flex items-center justify-center h-64 bg-gray-100">
+      <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-blue-500"></div>
+    </div>;
   }
 
   if (error) {
-    return <div>Error: {error}</div>;
+    return <div className="p-4 bg-red-100 border border-red-400 text-red-700 rounded">Error: {error}</div>;
   }
 
   return (
