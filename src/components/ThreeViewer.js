@@ -31,6 +31,7 @@ export const ThreeViewer = ({ modelUrl, fileType }) => {
 
         // Scene setup
         const newScene = new THREE.Scene();
+        newScene.background = new THREE.Color(0xf0f0f0);  // Light gray background
         const newCamera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
         const newRenderer = new THREE.WebGLRenderer({ antialias: true });
         newRenderer.setSize(window.innerWidth, window.innerHeight);
@@ -39,12 +40,15 @@ export const ThreeViewer = ({ modelUrl, fileType }) => {
         // Lighting
         const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
         newScene.add(ambientLight);
-        const pointLight = new THREE.PointLight(0xffffff, 1);
-        pointLight.position.set(5, 5, 5);
-        newScene.add(pointLight);
+        const directionalLight = new THREE.DirectionalLight(0xffffff, 0.5);
+        directionalLight.position.set(0, 1, 0);
+        newScene.add(directionalLight);
 
         // Controls
         const newControls = new OrbitControls(newCamera, newRenderer.domElement);
+        newControls.enableDamping = true;
+        newControls.dampingFactor = 0.25;
+        newControls.enableZoom = true;
 
         setScene(newScene);
         setCamera(newCamera);
@@ -92,6 +96,7 @@ export const ThreeViewer = ({ modelUrl, fileType }) => {
             cameraZ *= 1.5;
             newCamera.position.set(center.x, center.y, center.z + cameraZ);
             newCamera.lookAt(center);
+            newControls.target.set(center.x, center.y, center.z);
             newControls.update();
 
             // Get model info
@@ -158,8 +163,18 @@ export const ThreeViewer = ({ modelUrl, fileType }) => {
   }, [camera, renderer]);
 
   const handleResetView = () => {
-    if (controls) {
-      controls.reset();
+    if (controls && object) {
+      const box = new THREE.Box3().setFromObject(object);
+      const center = box.getCenter(new THREE.Vector3());
+      const size = box.getSize(new THREE.Vector3());
+      const maxDim = Math.max(size.x, size.y, size.z);
+      const fov = camera.fov * (Math.PI / 180);
+      let cameraZ = Math.abs(maxDim / 2 / Math.tan(fov / 2));
+      cameraZ *= 1.5;
+      camera.position.set(center.x, center.y, center.z + cameraZ);
+      camera.lookAt(center);
+      controls.target.set(center.x, center.y, center.z);
+      controls.update();
     }
   };
 

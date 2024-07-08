@@ -27,10 +27,10 @@ export default function ViewAsset() {
 
   if (error) {
     return (
-      <div className="fixed inset-0 bg-black flex items-center justify-center">
-        <div className="bg-white p-6 rounded-lg">
-          <h2 className="text-2xl font-bold mb-4">Error</h2>
-          <p className="text-red-600">{error}</p>
+      <div className="fixed inset-0 bg-gray-100 flex items-center justify-center">
+        <div className="bg-white p-6 rounded-lg shadow-lg">
+          <h2 className="text-2xl font-bold mb-4 text-red-600">Error</h2>
+          <p className="text-gray-700 mb-4">{error}</p>
           <Link href="/asset-manager">
             <Button className="mt-4">Back to Asset Manager</Button>
           </Link>
@@ -41,14 +41,14 @@ export default function ViewAsset() {
 
   if (!asset) {
     return (
-      <div className="fixed inset-0 bg-black flex items-center justify-center">
-        <div className="text-white text-2xl">Loading asset...</div>
+      <div className="fixed inset-0 bg-gray-100 flex items-center justify-center">
+        <div className="text-2xl font-semibold text-gray-700">Loading asset...</div>
       </div>
     );
   }
 
   return (
-    <div className="fixed inset-0 bg-black">
+    <div className="fixed inset-0 bg-gray-100">
       <div className="absolute top-4 left-4 z-10">
         <Link href="/asset-manager">
           <Button variant="outline">Back to Asset Manager</Button>
