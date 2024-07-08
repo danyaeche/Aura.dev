@@ -9,12 +9,10 @@ import { TDSLoader } from 'three/examples/jsm/loaders/TDSLoader';
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import { Label } from "@/components/ui/label";
-import { RotateCw, Move, Grid, Box, Maximize, Minimize } from "lucide-react";
-import { Switch } from "@/components/ui/switch";
+import { RotateCw, Move, Grid, Box } from "lucide-react";
 
 export const ThreeViewer = ({ modelUrl }) => {
   const mountRef = useRef(null);
-  const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const [scene, setScene] = useState(null);
   const [camera, setCamera] = useState(null);
@@ -23,23 +21,17 @@ export const ThreeViewer = ({ modelUrl }) => {
   const [object, setObject] = useState(null);
   const [wireframe, setWireframe] = useState(false);
   const [modelInfo, setModelInfo] = useState(null);
-  const [isFullscreen, setIsFullscreen] = useState(false);
-  const [loadingProgress, setLoadingProgress] = useState(0);
 
   useEffect(() => {
     if (!modelUrl || !mountRef.current) return;
 
     const init = () => {
-      setIsLoading(true);
-      setError(null);
-      setLoadingProgress(0);
-
       try {
         // Scene setup
         const newScene = new THREE.Scene();
-        const newCamera = new THREE.PerspectiveCamera(75, mountRef.current.clientWidth / mountRef.current.clientHeight, 0.1, 1000);
+        const newCamera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
         const newRenderer = new THREE.WebGLRenderer({ antialias: true });
-        newRenderer.setSize(mountRef.current.clientWidth, mountRef.current.clientHeight);
+        newRenderer.setSize(window.innerWidth, window.innerHeight);
         mountRef.current.appendChild(newRenderer.domElement);
 
         // Lighting
@@ -79,7 +71,7 @@ export const ThreeViewer = ({ modelUrl }) => {
             loader = new TDSLoader();
             break;
           default:
-            throw new Error('Unsupported file format');
+            throw new Error(`Unsupported file format: ${extension}`);
         }
 
         loader.load(
@@ -114,25 +106,18 @@ export const ThreeViewer = ({ modelUrl }) => {
               polyCount: Math.round(polyCount),
               fileSize: (loadedObject.byteLength / 1024 / 1024).toFixed(2) + ' MB'
             });
-
-            setIsLoading(false);
-            setLoadingProgress(100);
           },
           (xhr) => {
-            const progress = (xhr.loaded / xhr.total) * 100;
-            console.log(progress.toFixed(2) + '% loaded');
-            setLoadingProgress(progress);
+            console.log((xhr.loaded / xhr.total * 100) + '% loaded');
           },
           (error) => {
             console.error('Error loading 3D model:', error);
-            setError('Failed to load the 3D model: ' + error.message);
-            setIsLoading(false);
+            setError(`Failed to load the 3D model: ${error.message}`);
           }
         );
       } catch (err) {
         console.error('Error initializing 3D viewer:', err);
-        setError('Failed to initialize 3D viewer: ' + err.message);
-        setIsLoading(false);
+        setError(`Failed to initialize 3D viewer: ${err.message}`);
       }
     };
 
@@ -161,10 +146,10 @@ export const ThreeViewer = ({ modelUrl }) => {
 
   useEffect(() => {
     const handleResize = () => {
-      if (camera && renderer && mountRef.current) {
-        camera.aspect = mountRef.current.clientWidth / mountRef.current.clientHeight;
+      if (camera && renderer) {
+        camera.aspect = window.innerWidth / window.innerHeight;
         camera.updateProjectionMatrix();
-        renderer.setSize(mountRef.current.clientWidth, mountRef.current.clientHeight);
+        renderer.setSize(window.innerWidth, window.innerHeight);
       }
     };
 
@@ -223,43 +208,21 @@ export const ThreeViewer = ({ modelUrl }) => {
     }
   };
 
-  const toggleFullscreen = () => {
-    setIsFullscreen(!isFullscreen);
-    if (!isFullscreen) {
-      mountRef.current.requestFullscreen();
-    } else {
-      document.exitFullscreen();
-    }
-  };
-
-  if (isLoading) {
-    return (
-      <div className="flex flex-col items-center justify-center h-full bg-gray-100">
-        <div className="animate-spin rounded-full h-32 w-32 border-t-2 border-b-2 border-blue-500 mb-4"></div>
-        <p>Loading: {loadingProgress.toFixed(2)}%</p>
-      </div>
-    );
-  }
-
   if (error) {
     return (
-      <div className="flex items-center justify-center h-full bg-red-100 text-red-700 text-xl font-bold p-4">
+      <div className="flex items-center justify-center h-screen bg-red-100 text-red-700 text-xl font-bold p-4">
         <p>{error}</p>
       </div>
     );
   }
 
   return (
-    <div className={`relative w-full h-full ${isFullscreen ? 'fixed inset-0 z-50 bg-black' : ''}`}>
+    <div className="relative w-full h-screen">
       <div ref={mountRef} className="w-full h-full"></div>
       <div className="absolute bottom-4 left-4 space-y-2">
         <Button onClick={handleResetView}>Reset View</Button>
         <Button onClick={handleRotate}><RotateCw className="mr-2 h-4 w-4" /> Rotate</Button>
         <Button onClick={toggleWireframe}><Grid className="mr-2 h-4 w-4" /> Wireframe</Button>
-        <Button onClick={toggleFullscreen}>
-          {isFullscreen ? <Minimize className="mr-2 h-4 w-4" /> : <Maximize className="mr-2 h-4 w-4" />}
-          {isFullscreen ? 'Exit Fullscreen' : 'Fullscreen'}
-        </Button>
       </div>
       <div className="absolute bottom-4 right-4 space-y-2">
         <Label htmlFor="zoom">Zoom</Label>
