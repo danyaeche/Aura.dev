@@ -13,6 +13,7 @@ import { useAssets } from '@/context/AssetContext';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import ErrorBoundary from '@/components/ErrorBoundary';
 
 export default function AssetManager() {
   const { assets, addAsset, updateAsset, addTag, removeTag } = useAssets();
@@ -21,6 +22,7 @@ export default function AssetManager() {
   const [newTag, setNewTag] = useState('');
   const [sortCriteria, setSortCriteria] = useState('name');
   const [filterType, setFilterType] = useState('all');
+  const [filterSize, setFilterSize] = useState('all');
   const { toast } = useToast();
 
   const onDrop = useCallback((acceptedFiles) => {
@@ -51,7 +53,9 @@ export default function AssetManager() {
           fileType: file.name.split('.').pop(),
           size: file.size,
           lastModified: file.lastModified,
-          url: url
+          url: url,
+          version: 1,
+          history: [{ version: 1, date: new Date().toISOString(), description: 'Initial upload' }]
         });
         setIsLoading(false);
         toast({
@@ -87,7 +91,14 @@ export default function AssetManager() {
   };
 
   const handleRename = (assetId, newName) => {
-    updateAsset(assetId, { name: newName });
+    updateAsset(assetId, { 
+      name: newName,
+      version: assets.find(a => a.id === assetId).version + 1,
+      history: [
+        ...assets.find(a => a.id === assetId).history,
+        { version: assets.find(a => a.id === assetId).version + 1, date: new Date().toISOString(), description: 'Renamed asset' }
+      ]
+    });
   };
 
   const sortedAssets = [...assets].sort((a, b) => {
@@ -98,7 +109,11 @@ export default function AssetManager() {
   });
 
   const filteredAssets = sortedAssets.filter(asset => 
-    filterType === 'all' || asset.type === filterType
+    (filterType === 'all' || asset.type === filterType) &&
+    (filterSize === 'all' || 
+     (filterSize === 'small' && asset.size < 1000000) ||
+     (filterSize === 'medium' && asset.size >= 1000000 && asset.size < 10000000) ||
+     (filterSize === 'large' && asset.size >= 10000000))
   );
 
   return (
@@ -152,6 +167,17 @@ export default function AssetManager() {
               <SelectItem value="all">All Types</SelectItem>
               <SelectItem value="3D Model">3D Model</SelectItem>
               <SelectItem value="Other">Other</SelectItem>
+            </SelectContent>
+          </Select>
+          <Select value={filterSize} onValueChange={setFilterSize}>
+            <SelectTrigger className="w-[180px]">
+              <SelectValue placeholder="Filter by size" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Sizes</SelectItem>
+              <SelectItem value="small">Small (&lt;1MB)</SelectItem>
+              <SelectItem value="medium">Medium (1-10MB)</SelectItem>
+              <SelectItem value="large">Large (&gt;10MB)</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -221,6 +247,16 @@ export default function AssetManager() {
                                       ))}
                                     </div>
                                   </div>
+                                  <div>
+                                    <Label>Version History</Label>
+                                    <ul className="mt-2 space-y-2">
+                                      {asset.history.map((version, index) => (
+                                        <li key={index} className="text-sm">
+                                          Version {version.version}: {version.description} ({new Date(version.date).toLocaleString()})
+                                        </li>
+                                      ))}
+                                    </ul>
+                                  </div>
                                 </div>
                               </DialogContent>
                             </Dialog>
@@ -253,11 +289,13 @@ export default function AssetManager() {
             <CardTitle>3D Viewer</CardTitle>
           </CardHeader>
           <CardContent>
-            {selectedAsset ? (
-              <ThreeViewer modelUrl={selectedAsset.url} />
-            ) : (
-              <p>Select an asset to view</p>
-            )}
+            <ErrorBoundary>
+              {selectedAsset ? (
+                <ThreeViewer modelUrl={selectedAsset.url} />
+              ) : (
+                <p>Select an asset to view</p>
+              )}
+            </ErrorBoundary>
           </CardContent>
         </Card>
       </div>
