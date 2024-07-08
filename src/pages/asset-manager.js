@@ -5,18 +5,22 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/components/ui/use-toast";
-import { Upload, File, Info, Tag, X } from "lucide-react";
+import { Upload, File, Info, Tag, X, RotateCcw } from "lucide-react";
 import { ThreeViewer } from '@/components/ThreeViewer';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useAssets } from '@/context/AssetContext';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 export default function AssetManager() {
   const { assets, addAsset, updateAsset, addTag, removeTag } = useAssets();
   const [selectedAsset, setSelectedAsset] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [newTag, setNewTag] = useState('');
+  const [sortCriteria, setSortCriteria] = useState('name');
+  const [filterType, setFilterType] = useState('all');
   const { toast } = useToast();
 
   const onDrop = useCallback((acceptedFiles) => {
@@ -85,6 +89,17 @@ export default function AssetManager() {
     updateAsset(assetId, { name: newName });
   };
 
+  const sortedAssets = [...assets].sort((a, b) => {
+    if (sortCriteria === 'name') return a.name.localeCompare(b.name);
+    if (sortCriteria === 'size') return a.size - b.size;
+    if (sortCriteria === 'date') return new Date(b.lastModified) - new Date(a.lastModified);
+    return 0;
+  });
+
+  const filteredAssets = sortedAssets.filter(asset => 
+    filterType === 'all' || asset.type === filterType
+  );
+
   return (
     <div className="space-y-6">
       <h1 className="text-3xl font-bold">3D Asset Manager</h1>
@@ -116,6 +131,31 @@ export default function AssetManager() {
         </CardContent>
       </Card>
 
+      <div className="flex justify-between items-center">
+        <div className="flex space-x-2">
+          <Select value={sortCriteria} onValueChange={setSortCriteria}>
+            <SelectTrigger className="w-[180px]">
+              <SelectValue placeholder="Sort by" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="name">Name</SelectItem>
+              <SelectItem value="size">Size</SelectItem>
+              <SelectItem value="date">Date</SelectItem>
+            </SelectContent>
+          </Select>
+          <Select value={filterType} onValueChange={setFilterType}>
+            <SelectTrigger className="w-[180px]">
+              <SelectValue placeholder="Filter by type" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Types</SelectItem>
+              <SelectItem value="3D Model">3D Model</SelectItem>
+              <SelectItem value="Other">Other</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <Card>
           <CardHeader>
@@ -124,63 +164,81 @@ export default function AssetManager() {
           <CardContent>
             {isLoading ? (
               <p>Loading assets...</p>
-            ) : assets.length === 0 ? (
+            ) : filteredAssets.length === 0 ? (
               <p>No assets uploaded yet.</p>
             ) : (
               <ul className="space-y-2">
-                {assets.map((asset) => (
+                {filteredAssets.map((asset) => (
                   <li key={asset.id} className="flex items-center justify-between p-2 bg-gray-100 rounded hover:bg-gray-200 transition-colors">
                     <span className="flex items-center">
                       <File className="mr-2" size={20} />
                       {asset.name}
                     </span>
                     <div className="flex space-x-2">
-                      <Dialog>
-                        <DialogTrigger asChild>
-                          <Button variant="outline" size="sm">Edit</Button>
-                        </DialogTrigger>
-                        <DialogContent>
-                          <DialogHeader>
-                            <DialogTitle>Edit Asset: {asset.name}</DialogTitle>
-                          </DialogHeader>
-                          <div className="space-y-4">
-                            <div>
-                              <Label htmlFor="assetName">Asset Name</Label>
-                              <Input
-                                id="assetName"
-                                value={asset.name}
-                                onChange={(e) => handleRename(asset.id, e.target.value)}
-                              />
-                            </div>
-                            <div>
-                              <Label htmlFor="newTag">Add Tag</Label>
-                              <div className="flex space-x-2">
-                                <Input
-                                  id="newTag"
-                                  value={newTag}
-                                  onChange={(e) => setNewTag(e.target.value)}
-                                  placeholder="Enter new tag"
-                                />
-                                <Button onClick={() => handleAddTag(asset.id)}>Add</Button>
-                              </div>
-                            </div>
-                            <div>
-                              <Label>Current Tags</Label>
-                              <div className="flex flex-wrap gap-2 mt-2">
-                                {asset.tags.map((tag, index) => (
-                                  <span key={index} className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-sm flex items-center">
-                                    {tag}
-                                    <button onClick={() => handleRemoveTag(asset.id, tag)} className="ml-1 text-blue-600 hover:text-blue-800">
-                                      <X size={14} />
-                                    </button>
-                                  </span>
-                                ))}
-                              </div>
-                            </div>
-                          </div>
-                        </DialogContent>
-                      </Dialog>
-                      <Button onClick={() => setSelectedAsset(asset)}>View</Button>
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Dialog>
+                              <DialogTrigger asChild>
+                                <Button variant="outline" size="sm">Edit</Button>
+                              </DialogTrigger>
+                              <DialogContent>
+                                <DialogHeader>
+                                  <DialogTitle>Edit Asset: {asset.name}</DialogTitle>
+                                </DialogHeader>
+                                <div className="space-y-4">
+                                  <div>
+                                    <Label htmlFor="assetName">Asset Name</Label>
+                                    <Input
+                                      id="assetName"
+                                      value={asset.name}
+                                      onChange={(e) => handleRename(asset.id, e.target.value)}
+                                    />
+                                  </div>
+                                  <div>
+                                    <Label htmlFor="newTag">Add Tag</Label>
+                                    <div className="flex space-x-2">
+                                      <Input
+                                        id="newTag"
+                                        value={newTag}
+                                        onChange={(e) => setNewTag(e.target.value)}
+                                        placeholder="Enter new tag"
+                                      />
+                                      <Button onClick={() => handleAddTag(asset.id)}>Add</Button>
+                                    </div>
+                                  </div>
+                                  <div>
+                                    <Label>Current Tags</Label>
+                                    <div className="flex flex-wrap gap-2 mt-2">
+                                      {asset.tags.map((tag, index) => (
+                                        <span key={index} className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-sm flex items-center">
+                                          {tag}
+                                          <button onClick={() => handleRemoveTag(asset.id, tag)} className="ml-1 text-blue-600 hover:text-blue-800">
+                                            <X size={14} />
+                                          </button>
+                                        </span>
+                                      ))}
+                                    </div>
+                                  </div>
+                                </div>
+                              </DialogContent>
+                            </Dialog>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>Edit asset details and tags</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button onClick={() => setSelectedAsset(asset)}>View</Button>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>View asset in 3D viewer</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
                     </div>
                   </li>
                 ))}
