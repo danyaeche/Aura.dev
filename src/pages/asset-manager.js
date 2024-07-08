@@ -46,10 +46,11 @@ export default function AssetManager() {
       };
       reader.onload = () => {
         const url = URL.createObjectURL(file);
+        const fileType = file.name.split('.').pop().toLowerCase();
         addAsset({
           name: file.name,
           type: file.type.startsWith('model') ? '3D Model' : 'Other',
-          fileType: file.name.split('.').pop(),
+          fileType: fileType,
           size: file.size,
           lastModified: file.lastModified,
           url: url,
