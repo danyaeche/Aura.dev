@@ -8,11 +8,22 @@ import { Grid, List, Filter, Eye, Edit, Trash2 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAssets } from "@/context/AssetContext";
 import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
+import { useSession } from "next-auth/react";
+import { useRouter } from "next/router";
+import { useToast } from "@/components/ui/use-toast";
 
 export default function Assets() {
   const [viewMode, setViewMode] = useState('grid');
   const [selectedAsset, setSelectedAsset] = useState(null);
-  const { assets, loading, error, updateAsset, deleteAsset } = useAssets();
+  const { assets, loading, error, updateAsset, deleteAsset, reorderAssets } = useAssets();
+  const { data: session } = useSession();
+  const router = useRouter();
+  const { toast } = useToast();
+
+  if (!session) {
+    router.push('/login');
+    return null;
+  }
 
   const handleAssetClick = (asset) => {
     setSelectedAsset(asset);
@@ -20,12 +31,15 @@ export default function Assets() {
 
   const handleDragEnd = (result) => {
     if (!result.destination) return;
-    const items = Array.from(assets);
-    const [reorderedItem] = items.splice(result.source.index, 1);
-    items.splice(result.destination.index, 0, reorderedItem);
-    // Update the order in your state or backend
-    // For this example, we'll just log the new order
-    console.log('New asset order:', items);
+    reorderAssets(result.source.index, result.destination.index);
+  };
+
+  const handleDeleteAsset = (id) => {
+    deleteAsset(id);
+    toast({
+      title: "Asset deleted",
+      description: "The asset has been successfully deleted.",
+    });
   };
 
   const AssetCard = ({ asset, index }) => (
@@ -49,7 +63,7 @@ export default function Assets() {
               />
               <div className="flex-grow">
                 <h3 className="font-semibold">{asset.name}</h3>
-                <p className="text-sm text-gray-500">{asset.type}</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400">{asset.type}</p>
               </div>
               <div className="flex space-x-2 mt-2">
                 <Dialog>
@@ -71,7 +85,7 @@ export default function Assets() {
                 <Button variant="outline" size="sm" onClick={() => updateAsset(asset.id, { ...asset, name: `${asset.name} (edited)` })}>
                   <Edit className="h-4 w-4" />
                 </Button>
-                <Button variant="outline" size="sm" onClick={() => deleteAsset(asset.id)}>
+                <Button variant="outline" size="sm" onClick={() => handleDeleteAsset(asset.id)}>
                   <Trash2 className="h-4 w-4" />
                 </Button>
               </div>
