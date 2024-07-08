@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
-import { useSession, signOut } from "next-auth/react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -9,19 +8,18 @@ import {
   Image,
   Tags,
   Settings,
-  LogOut,
   Menu,
   X,
   Search,
   Sun,
-  Moon
+  Moon,
+  User
 } from 'lucide-react';
 import { useTheme } from '@/context/ThemeContext';
 
 export const Layout = ({ children }) => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const router = useRouter();
-  const { data: session } = useSession();
   const { isDarkMode, toggleTheme } = useTheme();
 
   const navItems = [
@@ -30,11 +28,6 @@ export const Layout = ({ children }) => {
     { icon: Tags, label: 'Labels', href: '/labels' },
     { icon: Settings, label: 'Settings', href: '/settings' },
   ];
-
-  const handleSignOut = async () => {
-    await signOut({ redirect: false });
-    router.push('/');
-  };
 
   return (
     <div className="flex h-screen bg-gray-100 dark:bg-gray-900">
@@ -97,21 +90,10 @@ export const Layout = ({ children }) => {
             <Button variant="ghost" size="icon" onClick={toggleTheme}>
               {isDarkMode ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
             </Button>
-            {session ? (
-              <>
-                <span className="text-sm text-gray-600 dark:text-gray-300">
-                  {session.user.email}
-                </span>
-                <Button variant="ghost" onClick={handleSignOut}>
-                  <LogOut className="h-5 w-5 mr-2" />
-                  Logout
-                </Button>
-              </>
-            ) : (
-              <Button variant="ghost" onClick={() => router.push('/login')}>
-                Login
-              </Button>
-            )}
+            <Button variant="ghost" onClick={() => router.push('/profile')}>
+              <User className="h-5 w-5 mr-2" />
+              Profile
+            </Button>
           </div>
         </header>
 

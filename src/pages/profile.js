@@ -1,31 +1,19 @@
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/router';
-import { useSession } from 'next-auth/react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/components/ui/use-toast";
+import { z } from 'zod';
+
+const userSchema = z.object({
+  name: z.string().min(2, "Name must be at least 2 characters"),
+  email: z.string().email("Invalid email address"),
+});
 
 export default function Profile() {
-  const [user, setUser] = useState({ name: '', email: '' });
-  const router = useRouter();
-  const { data: session } = useSession();
+  const [user, setUser] = useState({ name: 'John Doe', email: 'john@example.com' });
   const { toast } = useToast();
-
-  useEffect(() => {
-    if (session) {
-      setUser({
-        name: session.user.name || '',
-        email: session.user.email || '',
-      });
-    }
-  }, [session]);
-
-  if (!session) {
-    router.push('/login');
-    return null;
-  }
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -34,12 +22,21 @@ export default function Profile() {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    // In a real app, you would send this data to your API
-    console.log('Updated user profile:', user);
-    toast({
-      title: "Profile Updated",
-      description: "Your profile has been successfully updated.",
-    });
+    try {
+      userSchema.parse(user);
+      // In a real app, you would send this data to your API
+      console.log('Updated user profile:', user);
+      toast({
+        title: "Profile Updated",
+        description: "Your profile has been successfully updated.",
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: error.errors[0].message,
+        variant: "destructive",
+      });
+    }
   };
 
   return (
