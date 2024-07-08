@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Grid, List, Filter, Eye, Edit, Trash2 } from "lucide-react";
+import { Grid, List, Filter, Eye, Edit, Trash2, Share2, MessageSquare } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAssets } from "@/context/AssetContext";
 import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
@@ -15,7 +15,7 @@ import { useToast } from "@/components/ui/use-toast";
 export default function Assets() {
   const [viewMode, setViewMode] = useState('grid');
   const [selectedAsset, setSelectedAsset] = useState(null);
-  const { assets, loading, error, updateAsset, deleteAsset, reorderAssets } = useAssets();
+  const { assets, loading, error, updateAsset, deleteAsset, reorderAssets, addComment, shareAsset } = useAssets();
   const { data: session } = useSession();
   const router = useRouter();
   const { toast } = useToast();
@@ -32,13 +32,33 @@ export default function Assets() {
   const handleDragEnd = (result) => {
     if (!result.destination) return;
     reorderAssets(result.source.index, result.destination.index);
+    toast({
+      title: "Assets Reordered",
+      description: "The order of your assets has been updated.",
+    });
   };
 
   const handleDeleteAsset = (id) => {
     deleteAsset(id);
     toast({
-      title: "Asset deleted",
+      title: "Asset Deleted",
       description: "The asset has been successfully deleted.",
+    });
+  };
+
+  const handleAddComment = (assetId, comment) => {
+    addComment(assetId, comment);
+    toast({
+      title: "Comment Added",
+      description: "Your comment has been added to the asset.",
+    });
+  };
+
+  const handleShareAsset = (assetId, recipientEmail) => {
+    shareAsset(assetId, recipientEmail);
+    toast({
+      title: "Asset Shared",
+      description: `The asset has been shared with ${recipientEmail}.`,
     });
   };
 
@@ -64,6 +84,7 @@ export default function Assets() {
               <div className="flex-grow">
                 <h3 className="font-semibold">{asset.name}</h3>
                 <p className="text-sm text-gray-500 dark:text-gray-400">{asset.type}</p>
+                <p className="text-xs text-gray-400 dark:text-gray-500">Version: {asset.version}</p>
               </div>
               <div className="flex space-x-2 mt-2">
                 <Dialog>
@@ -79,6 +100,22 @@ export default function Assets() {
                     <div className="mt-4">
                       <img src={selectedAsset?.thumbnail} alt={selectedAsset?.name} className="w-full h-64 object-cover" />
                       <p className="mt-2">Type: {selectedAsset?.type}</p>
+                      <p className="mt-2">Version: {selectedAsset?.version}</p>
+                      <div className="mt-4">
+                        <h4 className="font-semibold">Comments:</h4>
+                        {selectedAsset?.comments.map(comment => (
+                          <p key={comment.id} className="text-sm">{comment.text}</p>
+                        ))}
+                        <Input
+                          placeholder="Add a comment..."
+                          onKeyPress={(e) => {
+                            if (e.key === 'Enter') {
+                              handleAddComment(selectedAsset.id, e.target.value);
+                              e.target.value = '';
+                            }
+                          }}
+                        />
+                      </div>
                     </div>
                   </DialogContent>
                 </Dialog>
@@ -87,6 +124,12 @@ export default function Assets() {
                 </Button>
                 <Button variant="outline" size="sm" onClick={() => handleDeleteAsset(asset.id)}>
                   <Trash2 className="h-4 w-4" />
+                </Button>
+                <Button variant="outline" size="sm" onClick={() => handleShareAsset(asset.id, 'example@email.com')}>
+                  <Share2 className="h-4 w-4" />
+                </Button>
+                <Button variant="outline" size="sm" onClick={() => handleAddComment(asset.id, 'New comment')}>
+                  <MessageSquare className="h-4 w-4" />
                 </Button>
               </div>
             </CardContent>
