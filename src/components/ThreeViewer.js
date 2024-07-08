@@ -52,11 +52,37 @@ export const ThreeViewer = ({ modelUrl, fileType }) => {
     return { newScene, newCamera, newRenderer, newControls };
   };
 
-  const loadModel = (scene, camera, controls) => {
+  const detectFileType = async (url) => {
+    try {
+      const response = await fetch(url);
+      const arrayBuffer = await response.arrayBuffer();
+      const uint8Array = new Uint8Array(arrayBuffer);
+      const header = uint8Array.slice(0, 4);
+      const headerString = String.fromCharCode.apply(null, header);
+
+      if (headerString === 'glTF') return 'gltf';
+      if (headerString.startsWith('OBJ')) return 'obj';
+      if (headerString === 'STL ') return 'stl';
+      if (uint8Array[0] === 0xFB && uint8Array[1] === 0xFC) return 'fbx';
+      if (uint8Array[0] === 0x4D && uint8Array[1] === 0x4D) return '3ds';
+
+      console.warn('Unable to detect file type from content. Falling back to provided fileType.');
+      return fileType;
+    } catch (error) {
+      console.error('Error detecting file type:', error);
+      return fileType;
+    }
+  };
+
+  const loadModel = async (scene, camera, controls) => {
     console.log('Loading model:', modelUrl, 'File type:', fileType);
     setLoading(true);
+    
+    const detectedFileType = await detectFileType(modelUrl);
+    console.log('Detected file type:', detectedFileType);
+
     let loader;
-    switch (fileType.toLowerCase()) {
+    switch (detectedFileType.toLowerCase()) {
       case 'gltf':
       case 'glb':
         loader = new GLTFLoader();
@@ -74,7 +100,7 @@ export const ThreeViewer = ({ modelUrl, fileType }) => {
         loader = new TDSLoader();
         break;
       default:
-        setError(`Unsupported file format: ${fileType}`);
+        setError(`Unsupported file format: ${detectedFileType}`);
         setLoading(false);
         return;
     }
