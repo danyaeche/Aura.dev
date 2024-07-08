@@ -9,7 +9,8 @@ import { TDSLoader } from 'three/examples/jsm/loaders/TDSLoader';
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import { Label } from "@/components/ui/label";
-import { RotateCw, Move } from "lucide-react";
+import { RotateCw, Move, Grid, Box } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
 
 export const ThreeViewer = ({ modelUrl }) => {
   const mountRef = useRef(null);
@@ -20,6 +21,8 @@ export const ThreeViewer = ({ modelUrl }) => {
   const [renderer, setRenderer] = useState(null);
   const [controls, setControls] = useState(null);
   const [object, setObject] = useState(null);
+  const [wireframe, setWireframe] = useState(false);
+  const [modelInfo, setModelInfo] = useState(null);
 
   useEffect(() => {
     if (!modelUrl) return;
@@ -96,6 +99,19 @@ export const ThreeViewer = ({ modelUrl }) => {
           newCamera.lookAt(center);
           newControls.update();
 
+          // Get model info
+          let polyCount = 0;
+          newObject.traverse((child) => {
+            if (child.isMesh) {
+              polyCount += child.geometry.attributes.position.count / 3;
+            }
+          });
+
+          setModelInfo({
+            polyCount: Math.round(polyCount),
+            fileSize: (loadedObject.byteLength / 1024 / 1024).toFixed(2) + ' MB'
+          });
+
           setIsLoading(false);
         },
         (xhr) => {
@@ -168,6 +184,17 @@ export const ThreeViewer = ({ modelUrl }) => {
     }
   };
 
+  const toggleWireframe = () => {
+    setWireframe(!wireframe);
+    if (object) {
+      object.traverse((child) => {
+        if (child.isMesh) {
+          child.material.wireframe = !wireframe;
+        }
+      });
+    }
+  };
+
   if (isLoading) {
     return <div>Loading 3D model...</div>;
   }
@@ -183,6 +210,7 @@ export const ThreeViewer = ({ modelUrl }) => {
         <div className="flex space-x-2">
           <Button onClick={handleResetView}>Reset View</Button>
           <Button onClick={handleRotate}><RotateCw className="mr-2 h-4 w-4" /> Rotate</Button>
+          <Button onClick={toggleWireframe}><Grid className="mr-2 h-4 w-4" /> Wireframe</Button>
         </div>
         <div>
           <Label htmlFor="zoom">Zoom</Label>
@@ -204,6 +232,13 @@ export const ThreeViewer = ({ modelUrl }) => {
             <Button onClick={() => handlePan('down')} className="col-start-2"><Move className="h-4 w-4 -rotate-90" /></Button>
           </div>
         </div>
+        {modelInfo && (
+          <div className="mt-4">
+            <h3 className="text-lg font-semibold">Model Information</h3>
+            <p>Polygon Count: {modelInfo.polyCount}</p>
+            <p>File Size: {modelInfo.fileSize}</p>
+          </div>
+        )}
       </div>
     </div>
   );
