@@ -54,7 +54,7 @@ export default function ViewAsset() {
           <Button variant="outline">Back to Asset Manager</Button>
         </Link>
       </div>
-      <ThreeViewer modelUrl={asset.url} />
+      <ThreeViewer modelUrl={asset.url} fileType={asset.fileType} />
     </div>
   );
 }

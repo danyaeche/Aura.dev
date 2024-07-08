@@ -11,7 +11,7 @@ import { Slider } from "@/components/ui/slider";
 import { Label } from "@/components/ui/label";
 import { RotateCw, Move, Grid, Box } from "lucide-react";
 
-export const ThreeViewer = ({ modelUrl }) => {
+export const ThreeViewer = ({ modelUrl, fileType }) => {
   const mountRef = useRef(null);
   const [error, setError] = useState(null);
   const [scene, setScene] = useState(null);
@@ -27,7 +27,7 @@ export const ThreeViewer = ({ modelUrl }) => {
 
     const init = () => {
       try {
-        console.log('Initializing 3D viewer with modelUrl:', modelUrl);
+        console.log('Initializing 3D viewer with modelUrl:', modelUrl, 'fileType:', fileType);
 
         // Scene setup
         const newScene = new THREE.Scene();
@@ -52,16 +52,8 @@ export const ThreeViewer = ({ modelUrl }) => {
         setControls(newControls);
 
         // Model loading
-        const getFileExtension = (url) => {
-          const parts = url.split('.');
-          return parts.length > 1 ? parts.pop().toLowerCase() : null;
-        };
-
-        const fileExtension = getFileExtension(modelUrl);
-        console.log('Detected file extension:', fileExtension);
-
         let loader;
-        switch (fileExtension) {
+        switch (fileType.toLowerCase()) {
           case 'gltf':
           case 'glb':
             loader = new GLTFLoader();
@@ -79,7 +71,7 @@ export const ThreeViewer = ({ modelUrl }) => {
             loader = new TDSLoader();
             break;
           default:
-            throw new Error(`Unsupported file format: ${fileExtension || 'unknown'}`);
+            throw new Error(`Unsupported file format: ${fileType}`);
         }
 
         loader.load(
@@ -150,7 +142,7 @@ export const ThreeViewer = ({ modelUrl }) => {
         }
       }
     };
-  }, [modelUrl]);
+  }, [modelUrl, fileType]);
 
   useEffect(() => {
     const handleResize = () => {
